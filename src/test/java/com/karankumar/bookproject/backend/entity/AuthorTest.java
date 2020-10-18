@@ -27,10 +27,12 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @IntegrationTest
+@DisplayName("Author should")
 class AuthorTest {
     private final BookService bookService;
     private final AuthorService authorService;
@@ -41,7 +43,8 @@ class AuthorTest {
     private PredefinedShelf toRead;
 
     @Autowired
-    AuthorTest(BookService bookService, AuthorService authorService, PredefinedShelfService predefinedShelfService) {
+    AuthorTest(BookService bookService, AuthorService authorService,
+               PredefinedShelfService predefinedShelfService) {
         this.bookService = bookService;
         this.authorService = authorService;
         this.predefinedShelfService = predefinedShelfService;
@@ -77,7 +80,7 @@ class AuthorTest {
     @Test
     @Disabled
     // TODO: fix failing test
-    void updateAuthorAffectsOneRow() {
+    void affectOnlyOneBookWhenUpdated() {
         Author newAuthor = new Author("Matthew", "Walker");
         testBook1.setAuthor(newAuthor);
         bookService.save(testBook1);
@@ -88,7 +91,7 @@ class AuthorTest {
     @Test
     @Disabled
     // TODO: fix failing test
-    void orphanAuthorsRemoved() {
+    void beRemovedWhenOrphan() {
         Author orphan = new Author("Jostein", "Gardner");
         Book book = new Book("Sophie's World", orphan, toRead);
         bookService.delete(book);

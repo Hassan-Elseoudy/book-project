@@ -32,15 +32,16 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.spring.SpringServlet;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Random;
@@ -50,15 +51,16 @@ import static com.karankumar.bookproject.backend.entity.PredefinedShelf.ShelfNam
 import static com.karankumar.bookproject.backend.entity.ReadingGoal.GoalType.PAGES;
 import static com.karankumar.bookproject.backend.entity.ReadingGoal.GoalType.BOOKS;
 import static com.karankumar.bookproject.backend.goal.CalculateReadingGoal.howManyReadThisYear;
-import static com.karankumar.bookproject.utils.ReadingGoalTestUtils.resetGoalService;
-import static com.karankumar.bookproject.utils.ReadingGoalTestUtils.findHowManyBooksInReadShelfWithFinishDate;
-import static com.karankumar.bookproject.utils.ReadingGoalTestUtils.findHowManyPagesInReadShelfWithFinishDate;
+import static com.karankumar.bookproject.util.ReadingGoalTestUtils.resetGoalService;
+import static com.karankumar.bookproject.util.ReadingGoalTestUtils.findHowManyBooksInReadShelfWithFinishDate;
+import static com.karankumar.bookproject.util.ReadingGoalTestUtils.findHowManyPagesInReadShelfWithFinishDate;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 
 @IntegrationTest
 @WebAppConfiguration
+@DisplayName("ReadingGoalView should")
 class ReadingGoalViewTest {
     private static Routes routes;
 
@@ -90,7 +92,7 @@ class ReadingGoalViewTest {
     }
 
     @Test
-    void testSetGoalButtonTextUpdatesWhenGoalUpdates() {
+    void updateSetGoalButtonTextWhenGoalUpdates() {
         // given initial state
         assumeThat(goalService.findAll()).isEmpty();
         String expected = ReadingGoalView.SET_GOAL;
@@ -113,14 +115,14 @@ class ReadingGoalViewTest {
     }
 
     @Test
-    void testTargetMetMessageNotShownWhenGoalNotMet() {
+    void notShowTargetMetMessageWhenGoalNotMet() {
         String expected = ReadingGoalView.TARGET_MET;
         String actual = goalView.calculateProgress(GOAL_TARGET, GOAL_TARGET - 1);
         assertThat(actual).isNotEqualTo(expected);
     }
 
     @Test
-    void testTargetMetMessageShownWhenGoalMet() {
+    void showTargetMetMessageWhenGoalMet() {
         assumeThat(goalService.findAll()).isEmpty();
         String expected = ReadingGoalView.TARGET_MET;
         String actual = goalView.calculateProgress(GOAL_TARGET, GOAL_TARGET);
@@ -128,39 +130,34 @@ class ReadingGoalViewTest {
     }
 
     @Test
-    void testTargetMetMessageShownWhenGoalExceeded() {
+    void showTargetMetMessageWhenGoalExceeded() {
         String expected = ReadingGoalView.TARGET_MET;
         String actual = goalView.calculateProgress(GOAL_TARGET, GOAL_TARGET + 1);
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
+    @Transactional
     @Disabled
-        // TODO: fix failing test. This runs fine in IntelliJ, but fails when `mvn clean install` is executed on Windows
-    void onlyReadBooksWithAFinishDateCountTowardsGoal() {
-        int numberOfShelves = predefinedShelfService.findAllForLoggedInUser().size();
-        assumeThat(numberOfShelves).isEqualTo(4);
-
-        Assumptions.assumeTrue(numberOfShelves == 4);
-
+    void countOnlyReadBooksWithAFinishDateTowardsGoal() {
+        // given
         resetBookService(bookService);
-        assumeThat(bookService.findAll()).isEmpty();
+        addBooksToAllShelves();
 
-        addBooksToAllShelves(numberOfShelves);
-
+        // when
         List<Book> allBooks = bookService.findAll();
         int booksInReadShelf = findHowManyBooksInReadShelfWithFinishDate(allBooks);
         int pagesReadInReadShelf = findHowManyPagesInReadShelfWithFinishDate(allBooks);
-        System.out.println("Pages read " + pagesReadInReadShelf);
 
+        // then
         PredefinedShelf readShelf = predefinedShelfService.findReadShelf();
-        Assumptions.assumeTrue(readShelf != null);
         assertThat(howManyReadThisYear(BOOKS, readShelf)).isEqualTo(booksInReadShelf);
         assertThat(howManyReadThisYear(PAGES, readShelf)).isEqualTo(pagesReadInReadShelf);
     }
 
-    private void addBooksToAllShelves(int numberOfShelves) {
+    private void addBooksToAllShelves() {
         int booksToAdd = 10;
+        int numberOfShelves = predefinedShelfService.findAllForLoggedInUser().size();
         for (int i = 0; i < booksToAdd; i++) {
             int random = ThreadLocalRandom.current().nextInt(0, numberOfShelves);
             Book book;
@@ -200,7 +197,7 @@ class ReadingGoalViewTest {
     }
 
     @Test
-    void correctInformationShownWhenGoalIsSetOrUpdated() {
+    void showCorrectInformationWhenGoalIsSetOrUpdated() {
         assumeThat(goalService.findAll()).isEmpty();
 
         // given
